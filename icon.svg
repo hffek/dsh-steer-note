@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="Quick Steer">
+  <rect width="64" height="64" rx="15" fill="#4D6BFE"/>
+  <path d="M13 20a7 7 0 0 1 7-7h24a7 7 0 0 1 7 7v14a7 7 0 0 1-7 7H33l-10 8v-8h-3a7 7 0 0 1-7-7V20Z" fill="#FFFFFF"/>
+  <path d="M23 27h18m0 0-6-6m6 6-6 6" fill="none" stroke="#4D6BFE" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
