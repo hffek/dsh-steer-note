@@ -6,21 +6,28 @@
 >
 > **AI disclosure**: Primarily written by an AI assistant (deepseek-flash in DeepSeek Harness); the maintainer directed, reviewed, and tested it.
 
+> **npm 状态**：尚未发布到 npm。请先用 GitHub 安装：
+> `dsh plugin --profile web add github:hffek/dsh-steer-note`
+>
+> **npm status**: Not published to npm yet; install from GitHub for now.
+
 在对话输入框上方增加一条插话栏：任务运行时可以随时补充方向，不用把内容塞进主输入框，也不会覆盖主输入框里的草稿，更不会挡住输入框下方的 token 用量和缓存命中显示。
 
 ## 安装
 
-从 npm 安装（发布后）：
+### npm（尚未发布）
 
-```bash
-dsh plugin --profile web add dsh-steer-note
-```
+npm 包还没有发布；现在请用下面的 GitHub 方式安装。
+
+### GitHub
 
 从 GitHub 安装：
 
 ```bash
 dsh plugin --profile web add github:hffek/dsh-steer-note
 ```
+
+### 本地开发目录
 
 本地开发目录安装：
 
