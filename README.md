@@ -2,6 +2,10 @@
 
 > A compact mid-turn steering box for DeepSeek Harness: text + images, read receipts, and unfinished-draft rescue when a turn ends.
 
+> **AI 声明**：本插件主要由 AI（DeepSeek Harness 中的 deepseek-flash）编写，维护者负责需求、审查和真机测试。
+>
+> **AI disclosure**: Primarily written by an AI assistant (deepseek-flash in DeepSeek Harness); the maintainer directed, reviewed, and tested it.
+
 在对话输入框上方增加一条插话栏：任务运行时可以随时补充方向，不用把内容塞进主输入框，也不会覆盖主输入框里的草稿，更不会挡住输入框下方的 token 用量和缓存命中显示。
 
 ## 安装
@@ -28,15 +32,17 @@ Desktop 请把 `--profile web` 换成 `--profile desktop`。安装后重启 DSH�
 
 ## 用法
 
-- 只有当当前会话的 Agent 正在运行时，插话栏才会出现。
+- 当前会话的 Agent 正在运行，或这个会话里还有未发送的插话草稿时，插话栏会出现。
 - `Enter` 发送，`Shift+Enter` 换行，`Esc` 让输入框失焦。
 - 文字和图片可以一起发送：点击图片按钮选择文件，或直接粘贴 / 拖入图片。发送时图片排在文字前面，和原生 composer 的顺序一致。
 - 支持 PNG、JPEG、WebP、GIF；张数、单张大小、总大小和边长限制读取原生 `imageLimits` 投影。图片需要当前模型支持视觉输入，否则会返回“当前模型不支持图片输入”。
 - 发送使用与原生输入框相同的 `session.prompt({ mode: 'steer' })` 通道，消息会作为正常的“插话”进入会话，并在下一步生效。
 - **任务结束时如果插话还没发送，草稿会自动搬到主输入框**：文字追加到现有草稿（空草稿则直接填入），图片用 `conversation.createDrafts` 转成原生草稿附件。主输入框正在发送或暂时不可用时，草稿留在插话栏，并显示“放入输入框”重试按钮。
-- 搬运成功后会话切换时清空并释放预览 URL；搬运失败时保留草稿和图片。
-- **插话记录/读取状态**：每发送一条插话，历史按钮会记录它，并显示 `已读取`、`待读取`、`已送达` 或 `未读取`。已读取来自 Chat 的 `steering` 节点，待读取来自 `inbox.next-step` / `next-turn`；回合结束仍没读到就标为未读取。点历史条目可把文字回填到插话栏（图片不会回填，需要重新添加）。
-- 插话记录目前只保存在当前页面的内存里，刷新/切换会话会清空；它只记录本插件发出的插话，不包含主输入框的历史消息。
+- 搬运成功后释放图片预览 URL；搬运失败时保留草稿和图片。
+- **插话草稿按会话持久化**：文字写入浏览器 localStorage，切换会话或刷新页面后会恢复；图片也会尽量保存（受 localStorage 容量限制，太大时会提示切换后不保留）。空闲会话里如果还有草稿，插话栏仍会显示，并提供“放入输入框”。
+- **插话记录/读取状态**：每发送一条插话，历史按钮会记录它，并显示 `已读取`、`待读取`、`已送达`、`未读取` 或 `已取消`。已读取来自 Chat 的 `steering` 节点，待读取来自 `inbox.next-step` / `next-turn`；回合结束仍没读到就标为未读取。点历史条目可把文字回填到插话栏（图片不会回填，需要重新添加）。
+- **取消插话**：还在 inbox 里、尚未被读取的插话，历史条目右侧会显示“取消”；点了会调用原生 `updateQueue({ action: { kind: 'remove' } })`。已经读取或已经失效的插话会提示无法取消。
+- 插话记录和草稿只保存在本机浏览器 localStorage，按会话隔离，不会上传；它们只包含本插件发出的插话，不包含主输入框的历史消息。
 - **自定义 steer 语义**：Host 半侧注册一个 `STEER_NOTE` 系统提示词小节，告诉模型“中途到达的用户消息是当前任务的航向修正，不要当成新任务/不要重开任务”。消息本身仍然走原生 `session.prompt`，所以 UI、日志、图片附件和读取状态都保持原生行为。
 - 系统提示词小节是 Host 半侧改动，**需要重启 DSH 才会生效**；Client 半侧的 UI 改动可以通过重载插件生效。
 - one-shot 子代理会话不显示插话栏。

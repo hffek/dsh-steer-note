@@ -44,6 +44,15 @@ window.__ModuleLoader__.load({
       'history.status.pending': '待读取',
       'history.status.delivered': '已送达',
       'history.status.unread': '未读取',
+      'history.status.cancelled': '已取消',
+      'history.cancel': '取消',
+      'history.cancel.aria': '取消这条插话',
+      'history.cancelling': '取消中',
+      'history.cancelled': '已取消',
+      'history.cancelGone': '已被读取或已失效，无法取消',
+      'history.cancelFailed': '取消失败：{message}',
+      'history.cancelUnavailable': '当前无法取消这条插话',
+      'draft.imagesNotSaved': '图片太大，切换会话后不会保留',
       'history.images': '{count} 张图',
       'history.imageOnly': '（只有图片）',
       'history.imagesNotKept': '插话记录只回填文字，图片需要重新添加',
@@ -87,6 +96,15 @@ window.__ModuleLoader__.load({
       'history.status.pending': 'Pending',
       'history.status.delivered': 'Delivered',
       'history.status.unread': 'Unread',
+      'history.status.cancelled': 'Cancelled',
+      'history.cancel': 'Cancel',
+      'history.cancel.aria': 'Cancel this interjection',
+      'history.cancelling': 'Cancelling',
+      'history.cancelled': 'Cancelled',
+      'history.cancelGone': 'It was already read or is no longer pending; it cannot be cancelled',
+      'history.cancelFailed': 'Cancel failed: {message}',
+      'history.cancelUnavailable': 'This interjection cannot be cancelled right now',
+      'draft.imagesNotSaved': 'The images are too large to keep across sessions',
       'history.images': '{count} images',
       'history.imageOnly': '(images only)',
       'history.imagesNotKept': 'History restores text only; re-add the images',
@@ -283,11 +301,20 @@ window.__ModuleLoader__.load({
       .dsh-steer-note-history-item {
         display: flex;
         align-items: center;
-        gap: 6px;
         width: 100%;
+        border-radius: 6px;
+      }
+      .dsh-steer-note-history-item:hover {
+        background: var(--dsw-alias-bg-layer-2);
+      }
+      .dsh-steer-note-history-recall {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex: 1;
+        min-width: 0;
         padding: 4px 2px;
         border: 0;
-        border-radius: 6px;
         background: transparent;
         color: inherit;
         font: inherit;
@@ -295,12 +322,30 @@ window.__ModuleLoader__.load({
         text-align: left;
         cursor: pointer;
       }
-      .dsh-steer-note-history-item:hover {
-        background: var(--dsw-alias-bg-layer-2);
-      }
-      .dsh-steer-note-history-item:focus-visible {
+      .dsh-steer-note-history-recall:focus-visible {
         outline: 2px solid var(--dsw-alias-brand-primary);
         outline-offset: -1px;
+      }
+      .dsh-steer-note-history-cancel {
+        flex: none;
+        padding: 0 4px;
+        border: 0;
+        background: transparent;
+        color: var(--dsw-alias-state-error-primary);
+        font: inherit;
+        font-size: 11px;
+        cursor: pointer;
+      }
+      .dsh-steer-note-history-cancel:hover:not(:disabled) {
+        text-decoration: underline;
+      }
+      .dsh-steer-note-history-cancel:focus-visible {
+        outline: 2px solid var(--dsw-alias-brand-primary);
+        outline-offset: 1px;
+      }
+      .dsh-steer-note-history-cancel:disabled {
+        cursor: default;
+        opacity: 0.45;
       }
       .dsh-steer-note-history-status {
         flex: none;
@@ -316,6 +361,9 @@ window.__ModuleLoader__.load({
       }
       .dsh-steer-note-history-status[data-status='unread'] {
         color: var(--dsw-alias-state-error-primary);
+      }
+      .dsh-steer-note-history-status[data-status='cancelled'] {
+        color: var(--dsw-alias-label-secondary);
       }
       .dsh-steer-note-history-text {
         flex: 1;
@@ -406,6 +454,7 @@ window.__ModuleLoader__.load({
       pending: '·',
       delivered: '↑',
       unread: '✗',
+      cancelled: '–',
     };
     const DEFAULT_IMAGE_LIMITS = {
       maxImagesPerMessage: 20,
@@ -566,6 +615,150 @@ window.__ModuleLoader__.load({
       };
     }
 
+    const DRAFT_TEXT_PREFIX = 'dsh-steer-note.draft.text.';
+    const DRAFT_IMAGES_PREFIX = 'dsh-steer-note.draft.images.';
+    const HISTORY_PREFIX = 'dsh-steer-note.history.';
+
+    function readStorage(key) {
+      try {
+        return typeof localStorage === 'undefined' ? null : localStorage.getItem(key);
+      } catch {
+        return null;
+      }
+    }
+
+    function writeStorage(key, value) {
+      try {
+        if (typeof localStorage === 'undefined') return false;
+        localStorage.setItem(key, value);
+        return true;
+      } catch {
+        return false;
+      }
+    }
+
+    function removeStorage(key) {
+      try {
+        if (typeof localStorage !== 'undefined') localStorage.removeItem(key);
+      } catch {
+        // Storage can be unavailable or full; the in-memory draft still works.
+      }
+    }
+
+    function serializeDraftImage(image) {
+      return {
+        name: image.name,
+        mediaType: image.mediaType,
+        data: image.data,
+        bytes: image.bytes,
+      };
+    }
+
+    function deserializeDraftImage(saved) {
+      if (saved === null || typeof saved !== 'object') return undefined;
+      if (typeof saved.data !== 'string' || typeof saved.mediaType !== 'string') return undefined;
+      try {
+        const binary = atob(saved.data);
+        const bytes = new Uint8Array(binary.length);
+        for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index);
+        const name = typeof saved.name === 'string' && saved.name !== '' ? saved.name : 'image';
+        const file = new File([bytes], name, { type: saved.mediaType });
+        return {
+          id: newRequestId(),
+          file,
+          name: file.name,
+          mediaType: saved.mediaType,
+          data: saved.data,
+          bytes: typeof saved.bytes === 'number' ? saved.bytes : file.size,
+          previewUrl: URL.createObjectURL(file),
+        };
+      } catch {
+        return undefined;
+      }
+    }
+
+    function readDraft(sessionId) {
+      const text = readStorage(`${DRAFT_TEXT_PREFIX}${sessionId}`) ?? '';
+      const raw = readStorage(`${DRAFT_IMAGES_PREFIX}${sessionId}`);
+      const images = [];
+      if (raw !== null) {
+        try {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed)) {
+            for (const saved of parsed) {
+              const image = deserializeDraftImage(saved);
+              if (image !== undefined) images.push(image);
+            }
+          }
+        } catch {
+          // Ignore a corrupt draft; the text part still restores.
+        }
+      }
+      return { text, images };
+    }
+
+    function saveDraftText(sessionId, text) {
+      if (text === '') removeStorage(`${DRAFT_TEXT_PREFIX}${sessionId}`);
+      else writeStorage(`${DRAFT_TEXT_PREFIX}${sessionId}`, text);
+    }
+
+    function saveDraftImages(sessionId, images) {
+      if (images.length === 0) {
+        removeStorage(`${DRAFT_IMAGES_PREFIX}${sessionId}`);
+        return true;
+      }
+      const totalChars = images.reduce((sum, image) => sum + image.data.length, 0);
+      if (totalChars > 4 * 1024 * 1024) {
+        removeStorage(`${DRAFT_IMAGES_PREFIX}${sessionId}`);
+        return false;
+      }
+      const saved = writeStorage(
+        `${DRAFT_IMAGES_PREFIX}${sessionId}`,
+        JSON.stringify(images.map(serializeDraftImage)),
+      );
+      if (!saved) removeStorage(`${DRAFT_IMAGES_PREFIX}${sessionId}`);
+      return saved;
+    }
+
+    function clearDraft(sessionId) {
+      removeStorage(`${DRAFT_TEXT_PREFIX}${sessionId}`);
+      removeStorage(`${DRAFT_IMAGES_PREFIX}${sessionId}`);
+    }
+
+    function readHistory(sessionId) {
+      const raw = readStorage(`${HISTORY_PREFIX}${sessionId}`);
+      if (raw === null) return [];
+      try {
+        const parsed = JSON.parse(raw);
+        if (!Array.isArray(parsed)) return [];
+        return parsed
+          .filter((entry) => entry !== null && typeof entry === 'object'
+            && typeof entry.id === 'string' && typeof entry.time === 'number')
+          .map((entry) => ({
+            id: entry.id,
+            text: typeof entry.text === 'string' ? entry.text : '',
+            imageCount: typeof entry.imageCount === 'number' ? entry.imageCount : 0,
+            time: entry.time,
+            status: typeof entry.status === 'string' ? entry.status : 'delivered',
+          }))
+          .slice(0, 8);
+      } catch {
+        return [];
+      }
+    }
+
+    function writeHistory(sessionId, history) {
+      if (history.length === 0) {
+        removeStorage(`${HISTORY_PREFIX}${sessionId}`);
+        return;
+      }
+      writeStorage(`${HISTORY_PREFIX}${sessionId}`, JSON.stringify(history));
+    }
+
+    function clearHistoryStorage(sessionId) {
+      removeStorage(`${HISTORY_PREFIX}${sessionId}`);
+    }
+
     /**
      * Compact steering composer above the main composer. It keeps its own draft,
      * appears only while this Session can accept steering, and sends the same
@@ -589,14 +782,18 @@ window.__ModuleLoader__.load({
         const [keepOpen, setKeepOpen] = React.useState(false);
         const [history, setHistory] = React.useState([]);
         const [showHistory, setShowHistory] = React.useState(false);
+        const [cancellingId, setCancellingId] = React.useState(null);
         const inputRef = React.useRef(null);
         const fileInputRef = React.useRef(null);
         const timerRef = React.useRef(0);
         const sendingRef = React.useRef(false);
         const addingRef = React.useRef(false);
+        const cancellingRef = React.useRef(false);
         const aliveRef = React.useRef(true);
         const imagesRef = React.useRef([]);
         const sessionRef = React.useRef(sessionId);
+        const historySessionRef = React.useRef(sessionId);
+        const draftWarningRef = React.useRef(false);
         const wasRunning = React.useRef(false);
         const transferredRef = React.useRef(false);
         const latestTextRef = React.useRef('');
@@ -619,12 +816,15 @@ window.__ModuleLoader__.load({
             readIds.add(node.source.rpcId);
           }
         }
-        const pendingIds = new Set();
+        const pendingItems = new Map();
         for (const target of ['next-step', 'next-turn']) {
           for (const message of inbox?.[target] ?? []) {
-            if (typeof message.source?.rpcId === 'string') pendingIds.add(message.source.rpcId);
+            if (typeof message.source?.rpcId === 'string' && message.id !== undefined) {
+              pendingItems.set(message.source.rpcId, String(message.id));
+            }
           }
         }
+        const pendingIds = new Set(pendingItems.keys());
         const readSignature = [...readIds].sort().join('|');
         const pendingSignature = [...pendingIds].sort().join('|');
 
@@ -637,19 +837,29 @@ window.__ModuleLoader__.load({
           sessionRef.current = sessionId;
           wasRunning.current = running;
           transferredRef.current = false;
-          latestTextRef.current = '';
-          latestImagesRef.current = [];
-          setText('');
+          const draft = readDraft(sessionId);
+          latestTextRef.current = draft.text;
+          latestImagesRef.current = draft.images;
+          setText(draft.text);
           setStatus(null);
           setPending(false);
           setKeepOpen(false);
-          setHistory([]);
+          setHistory(readHistory(sessionId));
           setShowHistory(false);
+          draftWarningRef.current = false;
           setImages((current) => {
             for (const image of current) URL.revokeObjectURL(image.previewUrl);
-            return [];
+            return draft.images;
           });
         }, [sessionId]);
+
+        React.useEffect(() => {
+          if (historySessionRef.current !== sessionId) {
+            historySessionRef.current = sessionId;
+            return;
+          }
+          writeHistory(sessionId, history);
+        }, [sessionId, history]);
 
         React.useEffect(() => {
           imagesRef.current = images;
@@ -705,6 +915,7 @@ window.__ModuleLoader__.load({
               if (typeof inputActions.persistDraft === 'function') inputActions.persistDraft();
               latestTextRef.current = '';
               setText('');
+              saveDraftText(sessionId, '');
               movedText = true;
             }
             if (pendingImages.length > 0) {
@@ -724,10 +935,12 @@ window.__ModuleLoader__.load({
               for (const image of pendingImages) URL.revokeObjectURL(image.previewUrl);
               latestImagesRef.current = [];
               setImages([]);
+              saveDraftImages(sessionId, []);
             }
             transferredRef.current = true;
             setKeepOpen(false);
             setStatus(null);
+            clearDraft(sessionId);
             return true;
           } catch (error) {
             const message = error instanceof Error ? error.message : String(error);
@@ -756,7 +969,7 @@ window.__ModuleLoader__.load({
           setHistory((current) => {
             let changed = false;
             const next = current.map((entry) => {
-              if (entry.status === 'read') return entry;
+              if (entry.status === 'read' || entry.status === 'cancelled') return entry;
               let nextStatus = entry.status;
               if (readIds.has(entry.id)) nextStatus = 'read';
               else if (pendingIds.has(entry.id)) nextStatus = 'pending';
@@ -770,7 +983,7 @@ window.__ModuleLoader__.load({
         }, [readSignature, pendingSignature, running, history]);
 
         const hasDraft = text.trim() !== '' || images.length > 0;
-        const visible = (running || (keepOpen && hasDraft) || (showHistory && history.length > 0))
+        const visible = (running || hasDraft || (showHistory && history.length > 0))
           && (subagentMode === undefined || subagentMode === 'continuable');
         if (!visible) return null;
 
@@ -877,7 +1090,13 @@ window.__ModuleLoader__.load({
             return;
           }
           if (accepted.length > 0) {
-            setImages((current) => [...current, ...accepted]);
+            const nextImages = [...images, ...accepted];
+            setImages(nextImages);
+            const saved = saveDraftImages(requestSession, nextImages);
+            if (!saved && !draftWarningRef.current) {
+              draftWarningRef.current = true;
+              setStatus({ kind: 'info', text: t('draft.imagesNotSaved') });
+            }
           }
           if (problem !== null) {
             flash({ kind: 'error', text: problem }, false);
@@ -890,7 +1109,9 @@ window.__ModuleLoader__.load({
           if (sendingRef.current) return;
           const target = images.find((image) => image.id === id);
           if (target !== undefined) URL.revokeObjectURL(target.previewUrl);
-          setImages((current) => current.filter((image) => image.id !== id));
+          const nextImages = images.filter((image) => image.id !== id);
+          setImages(nextImages);
+          saveDraftImages(sessionId, nextImages);
           setStatus((current) => (current?.kind === 'error' ? null : current));
         };
 
@@ -950,10 +1171,10 @@ window.__ModuleLoader__.load({
               clientTimeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
             });
             if (result !== undefined && result.ok === false) {
-              failure(result);
+              if (sessionRef.current === sessionId) failure(result);
               return;
             }
-            setHistory((current) => [{
+            const entry = {
               id: requestId,
               text: value,
               imageCount: sentImageCount,
@@ -963,11 +1184,19 @@ window.__ModuleLoader__.load({
                 : pendingIds.has(requestId)
                   ? 'pending'
                   : 'delivered',
-            }, ...current].slice(0, 8));
+            };
+            if (sessionRef.current !== sessionId) {
+              writeHistory(sessionId, [entry, ...readHistory(sessionId)].slice(0, 8));
+              clearDraft(sessionId);
+              for (const image of images) URL.revokeObjectURL(image.previewUrl);
+              return;
+            }
+            setHistory((current) => [entry, ...current].slice(0, 8));
             for (const image of images) URL.revokeObjectURL(image.previewUrl);
             setImages([]);
             setText('');
             setKeepOpen(false);
+            clearDraft(sessionId);
             setStatus({ kind: 'ok', text: t('status.sent') });
             timerRef.current = window.setTimeout(() => {
               timerRef.current = 0;
@@ -975,10 +1204,10 @@ window.__ModuleLoader__.load({
             }, 2400);
             inputRef.current?.focus();
           } catch (error) {
-            failure(undefined, error);
+            if (sessionRef.current === sessionId) failure(undefined, error);
           } finally {
             sendingRef.current = false;
-            setPending(false);
+            if (sessionRef.current === sessionId) setPending(false);
           }
         };
 
@@ -995,18 +1224,66 @@ window.__ModuleLoader__.load({
           }
         };
 
+        const cancelInterjection = async (entry) => {
+          if (cancellingRef.current) return;
+          if (typeof sessionRemote.updateQueue !== 'function') {
+            flash({ kind: 'error', text: t('history.cancelUnavailable') }, false);
+            return;
+          }
+          const itemId = pendingItems.get(entry.id);
+          if (itemId === undefined) {
+            flash({ kind: 'error', text: t('history.cancelGone') }, false);
+            return;
+          }
+          cancellingRef.current = true;
+          setCancellingId(entry.id);
+          try {
+            const result = await sessionRemote.updateQueue({
+              sessionId,
+              itemId,
+              action: { kind: 'remove' },
+            });
+            if (result !== undefined && result.ok === false) {
+              const code = result.error?.code;
+              flash({
+                kind: 'error',
+                text: code === 'session/queue-item-not-found' || code === 'session/steer-unavailable'
+                  ? t('history.cancelGone')
+                  : t('history.cancelFailed', { message: result.error?.message ?? code ?? '' }),
+              }, false);
+              return;
+            }
+            setHistory((current) => current.map((item) => (
+              item.id === entry.id ? { ...item, status: 'cancelled' } : item
+            )));
+            flash({ kind: 'ok', text: t('history.cancelled') }, true);
+          } catch (error) {
+            flash({
+              kind: 'error',
+              text: t('history.cancelFailed', {
+                message: error instanceof Error ? error.message : String(error),
+              }),
+            }, false);
+          } finally {
+            cancellingRef.current = false;
+            setCancellingId(null);
+          }
+        };
+
         const recall = (entry) => {
           if (entry.text === '') {
             setStatus({ kind: 'info', text: t('history.imagesNotKept') });
             return;
           }
           setText(entry.text);
+          saveDraftText(sessionId, entry.text);
           setStatus(null);
           setShowHistory(false);
           inputRef.current?.focus();
         };
 
         const clearHistory = () => {
+          clearHistoryStorage(sessionId);
           setHistory([]);
           setShowHistory(false);
         };
@@ -1028,26 +1305,42 @@ window.__ModuleLoader__.load({
               onClick: clearHistory,
             }, t('history.clear')),
           ),
-          history.map((entry) => h('button', {
-            type: 'button',
-            className: 'dsh-steer-note-history-item',
-            key: entry.id,
-            title: entry.imageCount > 0 ? t('history.imagesNotKept') : undefined,
-            onClick: () => recall(entry),
-          },
-          h('span', {
-            className: 'dsh-steer-note-history-status',
-            'data-status': entry.status,
-            title: t(`history.status.${entry.status}`),
-          }, HISTORY_STATUS_ICON[entry.status] ?? '·'),
-          h('span', { className: 'dsh-steer-note-history-text' },
-            entry.text === '' ? t('history.imageOnly') : entry.text,
-          ),
-          h('span', { className: 'dsh-steer-note-history-meta' },
-            entry.imageCount > 0 ? `${t('history.images', { count: entry.imageCount })} · ` : '',
-            new Date(entry.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          ),
-          )),
+          history.map((entry) => {
+            const canCancel = (entry.status === 'pending' || entry.status === 'delivered')
+              && pendingItems.has(entry.id);
+            return h('div', {
+              className: 'dsh-steer-note-history-item',
+              key: entry.id,
+            },
+            h('button', {
+              type: 'button',
+              className: 'dsh-steer-note-history-recall',
+              title: entry.imageCount > 0 ? t('history.imagesNotKept') : undefined,
+              onClick: () => recall(entry),
+            },
+            h('span', {
+              className: 'dsh-steer-note-history-status',
+              'data-status': entry.status,
+              title: t(`history.status.${entry.status}`),
+            }, HISTORY_STATUS_ICON[entry.status] ?? '·'),
+            h('span', { className: 'dsh-steer-note-history-text' },
+              entry.text === '' ? t('history.imageOnly') : entry.text,
+            ),
+            h('span', { className: 'dsh-steer-note-history-meta' },
+              entry.imageCount > 0 ? `${t('history.images', { count: entry.imageCount })} · ` : '',
+              new Date(entry.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            ),
+            ),
+            canCancel ? h('button', {
+              type: 'button',
+              className: 'dsh-steer-note-history-cancel',
+              'aria-label': t('history.cancel.aria'),
+              title: t('history.cancel.aria'),
+              disabled: cancellingId !== null,
+              onClick: () => void cancelInterjection(entry),
+            }, cancellingId === entry.id ? t('history.cancelling') : t('history.cancel')) : null,
+            );
+          }),
         ) : null,
         images.length === 0 ? null : h('div', { className: 'dsh-steer-note-previews' },
           images.map((image) => h('div', {
@@ -1086,7 +1379,9 @@ window.__ModuleLoader__.load({
             autoComplete: 'off',
             enterKeyHint: 'send',
             onChange: (event) => {
-              setText(event.target.value);
+              const nextText = event.target.value;
+              setText(nextText);
+              saveDraftText(sessionId, nextText);
               setStatus((current) => (current?.kind === 'error' ? null : current));
             },
             onKeyDown,
@@ -1123,7 +1418,7 @@ window.__ModuleLoader__.load({
           h(HistoryIcon),
           h('span', { className: 'dsh-steer-note-history-count' }, String(history.length)),
           ),
-          keepOpen ? h('button', {
+          (keepOpen || (!running && hasDraft)) ? h('button', {
             type: 'button',
             className: 'dsh-steer-note-retry',
             title: t('transfer.retry'),
