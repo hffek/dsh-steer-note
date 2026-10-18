@@ -13,6 +13,8 @@
 
 在对话输入框上方增加一条插话栏：任务运行时可以随时补充方向，不用把内容塞进主输入框，也不会覆盖主输入框里的草稿，更不会挡住输入框下方的 token 用量和缓存命中显示。
 
+![运行中的插话栏：文字、图片、插话记录都在这条独立输入框里](assets/steer-box.png)
+
 ## 安装
 
 ### npm（尚未发布）
@@ -53,6 +55,29 @@ Desktop 请把 `--profile web` 换成 `--profile desktop`。安装后重启 DSH�
 - **自定义 steer 语义**：Host 半侧注册一个 `STEER_NOTE` 系统提示词小节，告诉模型“中途到达的用户消息是当前任务的航向修正，不要当成新任务/不要重开任务”。消息本身仍然走原生 `session.prompt`，所以 UI、日志、图片附件和读取状态都保持原生行为。
 - 系统提示词小节是 Host 半侧改动，**需要重启 DSH 才会生效**；Client 半侧的 UI 改动可以通过重载插件生效。
 - one-shot 子代理会话不显示插话栏。
+
+## 兼容性
+
+测试环境：DSH Desktop `2.0.18` / DSH `0.2.1-rc.2`（Web profile）。
+
+依赖的客户端插槽接口：
+
+- `conversation.input.dock` slot
+- `useSessionStatus`、`useSession`、`useProjection`、`useInput`、`useChat`、`inputActions`
+
+依赖的原生 Remote：
+
+- `ctx.remote.session.prompt({ mode: 'steer' })`
+- `ctx.remote.session.updateQueue({ action: { kind: 'remove' } })`（取消未读取插话）
+
+降级行为：
+
+- 如果 `updateQueue` 不可用，不显示取消按钮。
+- 如果 `conversation.createDrafts` / `inputActions.addAttachments` 不可用，文字仍会搬到主输入框，图片保留在插话栏并提示手动添加。
+- 如果 `useChat` 暂时返回空节点或 inbox 投影不可用，历史状态会停留在“已送达”，不会误报“已读取”。
+- 历史/草稿只保存在本机 localStorage；清理浏览器数据会丢失。
+
+注意：图片搬家用到客户端内部服务 `ctx.get('conversation')` 的 `createDrafts`，不是公开文档 API；DSH 升级后需要回归测试。文本/图片发送、历史、取消都走原生公开接口。
 
 ## 文件
 

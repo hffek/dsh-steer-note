@@ -35,6 +35,7 @@ window.__ModuleLoader__.load({
       'transfer.failed': '未能放入输入框：{message}',
       'transfer.partial': '文字已放入输入框，但图片未能放入：{message}',
       'transfer.retry': '放入输入框',
+      'transfer.attachmentsUnavailable': '当前 DSH 不支持把图片放入主输入框，请在主输入框手动添加图片',
       'history.button': '插话记录',
       'history.button.aria': '查看插话记录和读取状态',
       'history.title': '最近插话',
@@ -87,6 +88,7 @@ window.__ModuleLoader__.load({
       'transfer.failed': 'Could not move the draft into the composer: {message}',
       'transfer.partial': 'Text moved to the composer, but the images could not be moved: {message}',
       'transfer.retry': 'Move to composer',
+      'transfer.attachmentsUnavailable': 'This DSH build cannot move images into the composer; add them in the composer manually.',
       'history.button': 'Interjections',
       'history.button.aria': 'View interjection history and read status',
       'history.title': 'Recent interjections',
@@ -919,12 +921,11 @@ window.__ModuleLoader__.load({
               movedText = true;
             }
             if (pendingImages.length > 0) {
-              if (typeof inputActions.addAttachments !== 'function') {
-                throw new Error('the main composer cannot accept attachments right now');
-              }
               const conversation = conversationOf();
-              if (conversation === undefined || typeof conversation.createDrafts !== 'function') {
-                throw new Error('the draft attachment service is unavailable');
+              if (typeof inputActions.addAttachments !== 'function'
+                || conversation === undefined
+                || typeof conversation.createDrafts !== 'function') {
+                throw new Error(t('transfer.attachmentsUnavailable'));
               }
               const drafts = conversation.createDrafts(sessionId, pendingImages.map((image) => image.file));
               const added = inputActions.addAttachments(drafts.map((draft) => draft.id));
@@ -1124,18 +1125,29 @@ window.__ModuleLoader__.load({
           }
           if (files.length > 0) {
             event.preventDefault();
+            event.stopPropagation();
             void addFiles(files);
           }
         };
 
         const onDragOver = (event) => {
-          if (Array.from(event.dataTransfer?.types ?? []).includes('Files')) event.preventDefault();
+          if (Array.from(event.dataTransfer?.types ?? []).includes('Files')) {
+            event.preventDefault();
+            event.stopPropagation();
+          }
+        };
+
+        const onDragEnter = (event) => {
+          if (Array.from(event.dataTransfer?.types ?? []).includes('Files')) {
+            event.stopPropagation();
+          }
         };
 
         const onDrop = (event) => {
           const files = Array.from(event.dataTransfer?.files ?? []);
           if (files.length > 0) {
             event.preventDefault();
+            event.stopPropagation();
             void addFiles(files);
           }
         };
@@ -1291,6 +1303,7 @@ window.__ModuleLoader__.load({
         return h('div', {
           className: 'dsh-steer-note-root',
           'data-steer-note': true,
+          onDragEnter,
           onDragOver,
           onDrop,
         },
@@ -1307,7 +1320,8 @@ window.__ModuleLoader__.load({
           ),
           history.map((entry) => {
             const canCancel = (entry.status === 'pending' || entry.status === 'delivered')
-              && pendingItems.has(entry.id);
+              && pendingItems.has(entry.id)
+              && typeof sessionRemote.updateQueue === 'function';
             return h('div', {
               className: 'dsh-steer-note-history-item',
               key: entry.id,

@@ -1,6 +1,6 @@
 {
   "name": "dsh-steer-note",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "A compact mid-turn steering box for DeepSeek Harness with text and images, read receipts, and unfinished-draft rescue.",
   "license": "MIT",
   "type": "module",
@@ -24,6 +24,7 @@
     "cordis.patch.yml",
     "locale/*.json",
     "icon.svg",
+    "assets/*.png",
     "README.md",
     "LICENSE",
     "CHANGELOG.md"

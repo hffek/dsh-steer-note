@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.2 — 2026-10-19
+
+- Fix: dropping a screenshot onto the interjection box no longer also adds it to the main composer.
+- Add: capability guards and a compatibility section for `updateQueue` and the internal draft-attachment API; text still moves when images cannot.
+- Add: real screenshot in the README.
+
 ## 0.1.1 — 2026-10-19
 
 - Fix: draft text and images persist per session across conversation switches and page reloads.
