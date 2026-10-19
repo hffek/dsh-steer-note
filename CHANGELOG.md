@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.1 — 2026-10-19
+
+- Docs: mark the package as published on npm, add the npm install command and badge.
+
 ## 0.2.0 — 2026-10-19
 
 - Add: arbitrary file attachments through the native draft-upload service, with picker, paste, and drag/drop.

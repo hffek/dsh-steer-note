@@ -1,5 +1,7 @@
 # 插话引导（dsh-steer-note）
 
+[![npm version](https://img.shields.io/npm/v/dsh-steer-note)](https://www.npmjs.com/package/dsh-steer-note)
+
 > 任务运行时，随时插一句话调整方向。文字、图片、文件都能发；没发出去的草稿，回合结束会自动回到主输入框。
 
 ![运行中的插话栏：文字、图片、文件 chip 和插话记录都在这条独立输入框里](assets/steer-box.png)
@@ -14,7 +16,13 @@
 
 ## 安装
 
-npm 尚未发布，先用 GitHub：
+从 npm 安装：
+
+```bash
+dsh plugin --profile web add dsh-steer-note
+```
+
+GitHub 备用：
 
 ```bash
 dsh plugin --profile web add github:hffek/dsh-steer-note
@@ -79,5 +87,5 @@ Desktop 把 `--profile web` 换成 `--profile desktop`。安装后重启 DSH，H
 ## 声明
 
 - 本插件主要由 AI（DeepSeek Harness / deepseek-flash）编写，维护者负责需求、审查与真机测试。
-- npm 尚未发布；当前只支持 GitHub 安装。
+- npm：https://www.npmjs.com/package/dsh-steer-note
 - MIT License。
