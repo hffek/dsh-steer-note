@@ -13,7 +13,7 @@ window.__ModuleLoader__.load({
       'button.sending': '发送中',
       'button.aria': '发送插话，让当前任务调整方向',
       'input.aria': '插话内容',
-      'hint': 'Enter 发送，Shift+Enter 换行；可粘贴或拖入图片',
+      'hint': 'Enter 发送，Shift+Enter 换行；可粘贴或拖入图片/文件',
       'status.sent': '已插入，下一步生效',
       'status.unavailable': '当前任务已结束或暂不可插话',
       'status.error': '插话失败：{message}',
@@ -30,12 +30,21 @@ window.__ModuleLoader__.load({
       'image.modelUnsupported': '当前模型不支持图片输入，请换用支持图片的模型',
       'image.sendFailed': '图片发送失败：{reason}',
       'image.readFailed': '图片读取失败：{message}',
+      'file.add': '添加文件',
+      'file.add.aria': '添加文件附件',
+      'file.uploading': '上传中',
+      'file.uploadingPercent': '上传中 {percent}%',
+      'file.failed': '上传失败：{message}',
+      'file.remove': '移除文件',
+      'file.sendPending': '文件还在上传，请稍候',
+      'file.unavailable': '当前会话不支持文件附件',
+      'file.runtimeOnly': '文件附件只在当前页面保留，刷新后会丢失',
       'transfer.busy': '主输入框正在发送，稍后再试',
       'transfer.unavailable': '主输入框暂不可用，内容先留在插话栏',
       'transfer.failed': '未能放入输入框：{message}',
-      'transfer.partial': '文字已放入输入框，但图片未能放入：{message}',
+      'transfer.partial': '文字已放入输入框，但附件未能放入：{message}',
       'transfer.retry': '放入输入框',
-      'transfer.attachmentsUnavailable': '当前 DSH 不支持把图片放入主输入框，请在主输入框手动添加图片',
+      'transfer.attachmentsUnavailable': '当前 DSH 不支持把附件放入主输入框，请在主输入框手动添加',
       'history.button': '插话记录',
       'history.button.aria': '查看插话记录和读取状态',
       'history.title': '最近插话',
@@ -55,8 +64,9 @@ window.__ModuleLoader__.load({
       'history.cancelUnavailable': '当前无法取消这条插话',
       'draft.imagesNotSaved': '图片太大，切换会话后不会保留',
       'history.images': '{count} 张图',
-      'history.imageOnly': '（只有图片）',
-      'history.imagesNotKept': '插话记录只回填文字，图片需要重新添加',
+      'history.files': '{count} 个文件',
+      'history.imageOnly': '（只有附件）',
+      'history.imagesNotKept': '插话记录只回填文字，图片和文件需要重新添加',
     };
 
     /** English copy. */
@@ -66,7 +76,7 @@ window.__ModuleLoader__.load({
       'button.sending': 'Sending',
       'button.aria': 'Send a steering message to redirect the running task',
       'input.aria': 'Steering message',
-      'hint': 'Enter to send, Shift+Enter for a new line; paste or drop images too',
+      'hint': 'Enter to send, Shift+Enter for a new line; paste or drop images and files',
       'status.sent': 'Inserted — applies at the next step',
       'status.unavailable': 'The task is no longer running or cannot accept steering',
       'status.error': 'Steering failed: {message}',
@@ -83,12 +93,21 @@ window.__ModuleLoader__.load({
       'image.modelUnsupported': 'The current model does not accept image input; switch to a vision-capable model',
       'image.sendFailed': 'Image send failed: {reason}',
       'image.readFailed': 'Image read failed: {message}',
+      'file.add': 'Add files',
+      'file.add.aria': 'Add file attachments',
+      'file.uploading': 'Uploading',
+      'file.uploadingPercent': 'Uploading {percent}%',
+      'file.failed': 'Upload failed: {message}',
+      'file.remove': 'Remove file',
+      'file.sendPending': 'The files are still uploading; wait a moment',
+      'file.unavailable': 'This session cannot accept file attachments',
+      'file.runtimeOnly': 'File attachments live only on this page and are lost on refresh',
       'transfer.busy': 'The main composer is sending; try again in a moment',
       'transfer.unavailable': 'The main composer is unavailable; the draft stays here',
       'transfer.failed': 'Could not move the draft into the composer: {message}',
-      'transfer.partial': 'Text moved to the composer, but the images could not be moved: {message}',
+      'transfer.partial': 'Text moved to the composer, but the attachments could not be moved: {message}',
       'transfer.retry': 'Move to composer',
-      'transfer.attachmentsUnavailable': 'This DSH build cannot move images into the composer; add them in the composer manually.',
+      'transfer.attachmentsUnavailable': 'This DSH build cannot move attachments into the composer; add them in the composer manually.',
       'history.button': 'Interjections',
       'history.button.aria': 'View interjection history and read status',
       'history.title': 'Recent interjections',
@@ -108,8 +127,9 @@ window.__ModuleLoader__.load({
       'history.cancelUnavailable': 'This interjection cannot be cancelled right now',
       'draft.imagesNotSaved': 'The images are too large to keep across sessions',
       'history.images': '{count} images',
-      'history.imageOnly': '(images only)',
-      'history.imagesNotKept': 'History restores text only; re-add the images',
+      'history.files': '{count} files',
+      'history.imageOnly': '(attachments only)',
+      'history.imagesNotKept': 'History restores text only; re-add the images and files',
     };
 
     const CSS = `
@@ -177,6 +197,67 @@ window.__ModuleLoader__.load({
       .dsh-steer-note-preview-remove:focus-visible {
         outline: 2px solid var(--dsw-alias-brand-primary);
         outline-offset: 1px;
+      }
+      .dsh-steer-note-files {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        padding: 0 0 6px 26px;
+      }
+      .dsh-steer-note-file {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        min-width: 0;
+        max-width: 100%;
+        padding: 3px 5px 3px 6px;
+        border: 1px solid var(--dsw-alias-border-l1);
+        border-radius: 7px;
+        background: var(--dsw-alias-bg-layer-2);
+        font-size: 11px;
+      }
+      .dsh-steer-note-file-icon {
+        flex: none;
+        display: inline-flex;
+        color: var(--dsw-alias-label-secondary);
+      }
+      .dsh-steer-note-file-name {
+        max-width: 190px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        color: var(--dsw-alias-label-primary);
+      }
+      .dsh-steer-note-file-meta {
+        flex: none;
+        color: var(--dsw-alias-label-secondary);
+        font-size: 10px;
+      }
+      .dsh-steer-note-file[data-status='error'] .dsh-steer-note-file-meta {
+        color: var(--dsw-alias-state-error-primary);
+      }
+      .dsh-steer-note-file-remove {
+        flex: none;
+        width: 16px;
+        height: 16px;
+        padding: 0;
+        border: 0;
+        border-radius: 50%;
+        background: transparent;
+        color: var(--dsw-alias-label-secondary);
+        font: inherit;
+        font-size: 12px;
+        line-height: 16px;
+        text-align: center;
+        cursor: pointer;
+      }
+      .dsh-steer-note-file-remove:hover:not(:disabled) {
+        background: var(--dsw-alias-bg-layer-1);
+        color: var(--dsw-alias-label-primary);
+      }
+      .dsh-steer-note-file-remove:disabled {
+        cursor: default;
+        opacity: 0.5;
       }
       .dsh-steer-note-row {
         display: flex;
@@ -537,6 +618,24 @@ window.__ModuleLoader__.load({
       }));
     }
 
+    /** Paperclip for the generic file attach button. */
+    function FileIcon() {
+      return h('svg', {
+        viewBox: '0 0 16 16',
+        width: 15,
+        height: 15,
+        fill: 'none',
+        'aria-hidden': true,
+      },
+      h('path', {
+        d: 'M9.8 4.2 5.4 8.6a2.1 2.1 0 0 0 3 3l4.7-4.7a3.2 3.2 0 0 0-4.5-4.5L3.2 7.8a4.3 4.3 0 0 0 6.1 6.1l4.2-4.2',
+        stroke: 'currentColor',
+        strokeWidth: 1.25,
+        strokeLinecap: 'round',
+        strokeLinejoin: 'round',
+      }));
+    }
+
     /** Clock with a counter-clockwise arrow: recent interjections. */
     function HistoryIcon() {
       return h('svg', {
@@ -722,6 +821,18 @@ window.__ModuleLoader__.load({
       return saved;
     }
 
+    const FILE_DRAFTS_BY_SESSION = new Map();
+
+    function readFileDrafts(sessionId) {
+      const files = FILE_DRAFTS_BY_SESSION.get(sessionId);
+      return files === undefined ? [] : [...files];
+    }
+
+    function saveFileDrafts(sessionId, files) {
+      if (files.length === 0) FILE_DRAFTS_BY_SESSION.delete(sessionId);
+      else FILE_DRAFTS_BY_SESSION.set(sessionId, [...files]);
+    }
+
     function clearDraft(sessionId) {
       removeStorage(`${DRAFT_TEXT_PREFIX}${sessionId}`);
       removeStorage(`${DRAFT_IMAGES_PREFIX}${sessionId}`);
@@ -740,6 +851,7 @@ window.__ModuleLoader__.load({
             id: entry.id,
             text: typeof entry.text === 'string' ? entry.text : '',
             imageCount: typeof entry.imageCount === 'number' ? entry.imageCount : 0,
+            fileCount: typeof entry.fileCount === 'number' ? entry.fileCount : 0,
             time: entry.time,
             status: typeof entry.status === 'string' ? entry.status : 'delivered',
           }))
@@ -781,12 +893,15 @@ window.__ModuleLoader__.load({
         const [pending, setPending] = React.useState(false);
         const [status, setStatus] = React.useState(null);
         const [images, setImages] = React.useState([]);
+        const [files, setFiles] = React.useState([]);
+        const [fileUploads, setFileUploads] = React.useState({});
         const [keepOpen, setKeepOpen] = React.useState(false);
         const [history, setHistory] = React.useState([]);
         const [showHistory, setShowHistory] = React.useState(false);
         const [cancellingId, setCancellingId] = React.useState(null);
         const inputRef = React.useRef(null);
         const fileInputRef = React.useRef(null);
+        const attachmentInputRef = React.useRef(null);
         const timerRef = React.useRef(0);
         const sendingRef = React.useRef(false);
         const addingRef = React.useRef(false);
@@ -800,6 +915,7 @@ window.__ModuleLoader__.load({
         const transferredRef = React.useRef(false);
         const latestTextRef = React.useRef('');
         const latestImagesRef = React.useRef([]);
+        const latestFilesRef = React.useRef([]);
         const mainDraftRef = React.useRef('');
         const mainPhaseRef = React.useRef('plain');
 
@@ -832,6 +948,7 @@ window.__ModuleLoader__.load({
 
         latestTextRef.current = text;
         latestImagesRef.current = images;
+        latestFilesRef.current = files;
         mainDraftRef.current = mainDraft ?? '';
         mainPhaseRef.current = mainPhase ?? 'plain';
 
@@ -840,20 +957,35 @@ window.__ModuleLoader__.load({
           wasRunning.current = running;
           transferredRef.current = false;
           const draft = readDraft(sessionId);
+          const storedFiles = readFileDrafts(sessionId);
           latestTextRef.current = draft.text;
           latestImagesRef.current = draft.images;
+          latestFilesRef.current = storedFiles;
           setText(draft.text);
           setStatus(null);
           setPending(false);
           setKeepOpen(false);
           setHistory(readHistory(sessionId));
           setShowHistory(false);
+          setFiles(storedFiles);
+          setFileUploads(conversationOf()?.fileUploads?.getSnapshot() ?? {});
           draftWarningRef.current = false;
           setImages((current) => {
             for (const image of current) URL.revokeObjectURL(image.previewUrl);
             return draft.images;
           });
         }, [sessionId]);
+
+        React.useEffect(() => {
+          if (files.length === 0) return undefined;
+          const conversation = conversationOf();
+          const store = conversation?.fileUploads;
+          if (store === undefined || typeof store.getSnapshot !== 'function') return undefined;
+          const tick = () => setFileUploads(store.getSnapshot());
+          tick();
+          const timer = window.setInterval(tick, 500);
+          return () => window.clearInterval(timer);
+        }, [files, sessionId]);
 
         React.useEffect(() => {
           if (historySessionRef.current !== sessionId) {
@@ -888,7 +1020,8 @@ window.__ModuleLoader__.load({
           if (sessionRef.current !== sessionId || transferredRef.current) return false;
           const value = latestTextRef.current.trim();
           const pendingImages = latestImagesRef.current;
-          if (value === '' && pendingImages.length === 0) return false;
+          const pendingFiles = latestFilesRef.current;
+          if (value === '' && pendingImages.length === 0 && pendingFiles.length === 0) return false;
           if (sendingRef.current) {
             setKeepOpen(true);
             return false;
@@ -920,23 +1053,35 @@ window.__ModuleLoader__.load({
               saveDraftText(sessionId, '');
               movedText = true;
             }
-            if (pendingImages.length > 0) {
-              const conversation = conversationOf();
-              if (typeof inputActions.addAttachments !== 'function'
-                || conversation === undefined
-                || typeof conversation.createDrafts !== 'function') {
+            if (pendingImages.length > 0 || pendingFiles.length > 0) {
+              if (typeof inputActions.addAttachments !== 'function') {
                 throw new Error(t('transfer.attachmentsUnavailable'));
               }
-              const drafts = conversation.createDrafts(sessionId, pendingImages.map((image) => image.file));
-              const added = inputActions.addAttachments(drafts.map((draft) => draft.id));
+              const conversation = conversationOf();
+              let imageDrafts = [];
+              if (pendingImages.length > 0) {
+                if (conversation === undefined || typeof conversation.createDrafts !== 'function') {
+                  throw new Error(t('transfer.attachmentsUnavailable'));
+                }
+                imageDrafts = conversation.createDrafts(sessionId, pendingImages.map((image) => image.file));
+              }
+              const attachmentIds = [
+                ...imageDrafts.map((draft) => draft.id),
+                ...pendingFiles.map((file) => file.id),
+              ];
+              const added = attachmentIds.length === 0 || inputActions.addAttachments(attachmentIds);
               if (!added) {
-                conversation.releaseDraftAttachments?.(drafts);
+                conversation?.releaseDraftAttachments?.(imageDrafts);
                 throw new Error('the main composer is busy');
               }
               for (const image of pendingImages) URL.revokeObjectURL(image.previewUrl);
               latestImagesRef.current = [];
               setImages([]);
               saveDraftImages(sessionId, []);
+              latestFilesRef.current = [];
+              setFiles([]);
+              saveFileDrafts(sessionId, []);
+              setFileUploads({});
             }
             transferredRef.current = true;
             setKeepOpen(false);
@@ -983,7 +1128,7 @@ window.__ModuleLoader__.load({
           });
         }, [readSignature, pendingSignature, running, history]);
 
-        const hasDraft = text.trim() !== '' || images.length > 0;
+        const hasDraft = text.trim() !== '' || images.length > 0 || files.length > 0;
         const visible = (running || hasDraft || (showHistory && history.length > 0))
           && (subagentMode === undefined || subagentMode === 'continuable');
         if (!visible) return null;
@@ -1045,19 +1190,20 @@ window.__ModuleLoader__.load({
           flash({ kind: 'error', text: t('status.error', { message }) }, false);
         };
 
-        const addFiles = async (files) => {
-          if (sendingRef.current || addingRef.current || files.length === 0) return;
+        const addFiles = async (incoming) => {
+          if (sendingRef.current || addingRef.current || incoming.length === 0) return;
           addingRef.current = true;
           const requestSession = sessionRef.current;
           let count = images.length;
           let total = images.reduce((sum, image) => sum + image.bytes, 0);
           const accepted = [];
+          const generic = [];
           let problem = null;
           try {
-            for (const file of files) {
+            for (const file of incoming) {
               const mediaType = imageMediaTypeOf(file);
               if (mediaType === undefined || !supportedTypes.includes(mediaType)) {
-                problem = t('image.unsupported');
+                generic.push(file);
                 continue;
               }
               if (count >= maxImages) {
@@ -1099,9 +1245,40 @@ window.__ModuleLoader__.load({
               setStatus({ kind: 'info', text: t('draft.imagesNotSaved') });
             }
           }
+          if (generic.length > 0) {
+            const conversation = conversationOf();
+            if (conversation === undefined || typeof conversation.createDrafts !== 'function') {
+              problem = t('file.unavailable');
+            } else {
+              try {
+                const drafts = conversation.createDrafts(requestSession, generic);
+                const added = drafts
+                  .filter((draft) => draft.kind === 'file')
+                  .map((draft) => ({
+                    id: draft.id,
+                    file: draft.file,
+                    name: draft.file.name === '' ? 'file' : draft.file.name,
+                    size: draft.file.size,
+                    type: draft.file.type,
+                  }));
+                if (added.length > 0) {
+                  setFiles((current) => {
+                    if (sessionRef.current !== requestSession) return current;
+                    const nextFiles = [...current, ...added];
+                    latestFilesRef.current = nextFiles;
+                    saveFileDrafts(requestSession, nextFiles);
+                    return nextFiles;
+                  });
+                  setFileUploads(conversation.fileUploads?.getSnapshot() ?? {});
+                }
+              } catch (error) {
+                problem = error instanceof Error ? error.message : String(error);
+              }
+            }
+          }
           if (problem !== null) {
-            flash({ kind: 'error', text: problem }, false);
-          } else if (accepted.length > 0) {
+            flash({ kind: 'error', text: t('status.error', { message: problem }) }, false);
+          } else if (accepted.length > 0 || generic.length > 0) {
             setStatus((current) => (current?.kind === 'error' ? null : current));
           }
         };
@@ -1116,12 +1293,26 @@ window.__ModuleLoader__.load({
           setStatus((current) => (current?.kind === 'error' ? null : current));
         };
 
+        const removeFile = (id) => {
+          if (sendingRef.current) return;
+          const conversation = conversationOf();
+          conversation?.releaseDraftAttachment?.(id);
+          setFiles((current) => {
+            const nextFiles = current.filter((file) => file.id !== id);
+            latestFilesRef.current = nextFiles;
+            saveFileDrafts(sessionId, nextFiles);
+            return nextFiles;
+          });
+          setFileUploads(conversation?.fileUploads?.getSnapshot() ?? {});
+          setStatus((current) => (current?.kind === 'error' ? null : current));
+        };
+
         const onPaste = (event) => {
           const files = [];
           for (const item of Array.from(event.clipboardData?.items ?? [])) {
             if (item.kind !== 'file') continue;
             const file = item.getAsFile();
-            if (file !== null && imageMediaTypeOf(file) !== undefined) files.push(file);
+            if (file !== null) files.push(file);
           }
           if (files.length > 0) {
             event.preventDefault();
@@ -1154,7 +1345,7 @@ window.__ModuleLoader__.load({
 
         const send = async () => {
           const value = text.trim();
-          if (sendingRef.current || (value === '' && images.length === 0)) return;
+          if (sendingRef.current || (value === '' && images.length === 0 && files.length === 0)) return;
           sendingRef.current = true;
           setPending(true);
           setStatus(null);
@@ -1162,6 +1353,7 @@ window.__ModuleLoader__.load({
             clearTimeout(timerRef.current);
             timerRef.current = 0;
           }
+          const conversation = conversationOf();
           try {
             const content = [];
             for (const image of images) {
@@ -1171,6 +1363,26 @@ window.__ModuleLoader__.load({
                 data: image.data,
                 ...image.name === '' ? {} : { name: image.name },
               });
+            }
+            let sentFileCount = 0;
+            if (files.length > 0) {
+              if (conversation === undefined || typeof conversation.serializeDraftAttachments !== 'function') {
+                throw new Error(t('file.unavailable'));
+              }
+              const uploads = conversation.fileUploads?.getSnapshot() ?? {};
+              for (const file of files) {
+                const upload = uploads[file.id];
+                if (upload?.status === 'error') {
+                  throw new Error(t('file.failed', { message: upload.message ?? '' }));
+                }
+                if (upload?.status !== 'ready') {
+                  setStatus({ kind: 'info', text: t('file.sendPending') });
+                  return;
+                }
+              }
+              const serialized = await conversation.serializeDraftAttachments(files.map((file) => file.id));
+              content.push(...serialized.attachments);
+              sentFileCount = files.length;
             }
             if (value !== '') content.push({ type: 'text', text: value });
             const requestId = newRequestId();
@@ -1190,6 +1402,7 @@ window.__ModuleLoader__.load({
               id: requestId,
               text: value,
               imageCount: sentImageCount,
+              fileCount: sentFileCount,
               time: Date.now(),
               status: readIds.has(requestId)
                 ? 'read'
@@ -1200,6 +1413,12 @@ window.__ModuleLoader__.load({
             if (sessionRef.current !== sessionId) {
               writeHistory(sessionId, [entry, ...readHistory(sessionId)].slice(0, 8));
               clearDraft(sessionId);
+              try {
+                if (files.length > 0) conversation?.releaseDraftAttachments?.(files);
+              } catch {
+                // The Host has accepted the prompt; a stale browser draft must not fail the send.
+              }
+              saveFileDrafts(sessionId, []);
               for (const image of images) URL.revokeObjectURL(image.previewUrl);
               return;
             }
@@ -1209,6 +1428,15 @@ window.__ModuleLoader__.load({
             setText('');
             setKeepOpen(false);
             clearDraft(sessionId);
+            try {
+              if (files.length > 0) conversation?.releaseDraftAttachments?.(files);
+            } catch {
+              // The Host has accepted the prompt; a stale browser draft must not fail the send.
+            }
+            latestFilesRef.current = [];
+            setFiles([]);
+            saveFileDrafts(sessionId, []);
+            setFileUploads({});
             setStatus({ kind: 'ok', text: t('status.sent') });
             timerRef.current = window.setTimeout(() => {
               timerRef.current = 0;
@@ -1329,7 +1557,7 @@ window.__ModuleLoader__.load({
             h('button', {
               type: 'button',
               className: 'dsh-steer-note-history-recall',
-              title: entry.imageCount > 0 ? t('history.imagesNotKept') : undefined,
+              title: entry.imageCount > 0 || entry.fileCount > 0 ? t('history.imagesNotKept') : undefined,
               onClick: () => recall(entry),
             },
             h('span', {
@@ -1342,6 +1570,7 @@ window.__ModuleLoader__.load({
             ),
             h('span', { className: 'dsh-steer-note-history-meta' },
               entry.imageCount > 0 ? `${t('history.images', { count: entry.imageCount })} · ` : '',
+              entry.fileCount > 0 ? `${t('history.files', { count: entry.fileCount })} · ` : '',
               new Date(entry.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
             ),
             ),
@@ -1375,6 +1604,43 @@ window.__ModuleLoader__.load({
             onClick: () => removeImage(image.id),
           }, '×'),
           )),
+        ),
+        files.length === 0 ? null : h('div', {
+          className: 'dsh-steer-note-files',
+          title: t('file.runtimeOnly'),
+        },
+          files.map((file) => {
+            const upload = fileUploads[file.id];
+            const uploadStatus = upload?.status;
+            const percent = upload?.total === undefined || upload.total === 0
+              ? null
+              : Math.round((upload.loaded / upload.total) * 100);
+            const meta = uploadStatus === 'error'
+              ? t('file.failed', { message: upload.message ?? '' })
+              : uploadStatus === 'ready'
+                ? imageSizeText(file.size)
+                : percent === null
+                  ? t('file.uploading')
+                  : t('file.uploadingPercent', { percent });
+            return h('div', {
+              className: 'dsh-steer-note-file',
+              key: file.id,
+              'data-status': uploadStatus ?? 'uploading',
+              title: file.name,
+            },
+            h('span', { className: 'dsh-steer-note-file-icon', 'aria-hidden': true }, h(FileIcon)),
+            h('span', { className: 'dsh-steer-note-file-name' }, file.name),
+            h('span', { className: 'dsh-steer-note-file-meta', title: meta }, meta),
+            h('button', {
+              type: 'button',
+              className: 'dsh-steer-note-file-remove',
+              'aria-label': t('file.remove'),
+              title: t('file.remove'),
+              disabled: pending,
+              onClick: () => removeFile(file.id),
+            }, '×'),
+            );
+          }),
         ),
         h('div', { className: 'dsh-steer-note-row' },
           h('span', { className: 'dsh-steer-note-icon', 'aria-hidden': true },
@@ -1421,6 +1687,25 @@ window.__ModuleLoader__.load({
             disabled: pending || images.length >= maxImages,
             onClick: () => fileInputRef.current?.click(),
           }, h(ImageIcon)),
+          h('input', {
+            ref: attachmentInputRef,
+            type: 'file',
+            multiple: true,
+            style: { display: 'none' },
+            onChange: (event) => {
+              const incoming = Array.from(event.target.files ?? []);
+              event.target.value = '';
+              void addFiles(incoming);
+            },
+          }),
+          h('button', {
+            type: 'button',
+            className: 'dsh-steer-note-attach',
+            'aria-label': t('file.add.aria'),
+            title: t('file.add'),
+            disabled: pending,
+            onClick: () => attachmentInputRef.current?.click(),
+          }, h(FileIcon)),
           history.length === 0 ? null : h('button', {
             type: 'button',
             className: 'dsh-steer-note-history',
@@ -1446,7 +1731,7 @@ window.__ModuleLoader__.load({
             className: 'dsh-steer-note-button',
             'aria-label': t('button.aria'),
             title: t('hint'),
-            disabled: pending || (text.trim() === '' && images.length === 0),
+            disabled: pending || (text.trim() === '' && images.length === 0 && files.length === 0),
             onClick: () => void send(),
           },
           pending ? t('button.sending') : t('button'),

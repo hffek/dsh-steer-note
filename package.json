@@ -1,7 +1,7 @@
 {
   "name": "dsh-steer-note",
-  "version": "0.1.2",
-  "description": "A compact mid-turn steering box for DeepSeek Harness with text and images, read receipts, and unfinished-draft rescue.",
+  "version": "0.2.0",
+  "description": "A compact mid-turn steering box for DeepSeek Harness with text, images, files, read receipts, and unfinished-draft rescue.",
   "license": "MIT",
   "type": "module",
   "keywords": [

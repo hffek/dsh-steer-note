@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.0 — 2026-10-19
+
+- Add: arbitrary file attachments through the native draft-upload service, with picker, paste, and drag/drop.
+- Add: upload progress/error chips, per-file removal, and `{ type: 'file', receiptId }` prompt parts.
+- Add: file drafts are transferred to the main composer with the rest of the draft.
+- Note: file drafts are runtime-only and are lost on page refresh; text and image drafts still persist.
+
 ## 0.1.2 — 2026-10-19
 
 - Fix: dropping a screenshot onto the interjection box no longer also adds it to the main composer.
