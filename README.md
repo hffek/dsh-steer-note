@@ -89,3 +89,20 @@ Desktop 把 `--profile web` 换成 `--profile desktop`。安装后重启 DSH，H
 - 本插件主要由 AI（DeepSeek Harness / deepseek-flash）编写，维护者负责需求、审查与真机测试。
 - npm：https://www.npmjs.com/package/dsh-steer-note
 - MIT License。
+
+<details>
+<summary>English</summary>
+
+**dsh-steer-note** is a compact mid-turn steering box for DeepSeek Harness.
+
+While an agent is running, add direction without touching the main composer: text, images, and files are sent as native steering messages. If the turn ends before you send, the unfinished draft is moved into the main composer. Interjection history tracks read/pending status and lets you cancel messages that have not been read. Text and image drafts survive conversation switches and page reloads; file drafts are runtime-only.
+
+### Install
+
+```bash
+dsh plugin --profile web add dsh-steer-note
+```
+
+For Desktop, use `--profile desktop` instead. Restart DSH once so the `STEER_NOTE` system-prompt section takes effect.
+
+</details>
