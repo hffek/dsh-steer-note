@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.2 — 2026-10-20
+
+- UI: merge the image and file buttons into one paperclip; selected images are still detected and previewed automatically.
+- Docs: update the usage line for the single attachment entry.
+
 ## 0.2.1 — 2026-10-19
 
 - Docs: mark the package as published on npm, add the npm install command and badge.

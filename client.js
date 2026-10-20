@@ -17,8 +17,6 @@ window.__ModuleLoader__.load({
       'status.sent': '已插入，下一步生效',
       'status.unavailable': '当前任务已结束或暂不可插话',
       'status.error': '插话失败：{message}',
-      'image.add': '添加图片',
-      'image.add.aria': '添加图片到插话',
       'image.remove': '移除图片',
       'image.unsupported': '仅支持 PNG、JPEG、WebP、GIF 图片',
       'image.invalid': '图片格式不支持或文件已损坏',
@@ -30,8 +28,8 @@ window.__ModuleLoader__.load({
       'image.modelUnsupported': '当前模型不支持图片输入，请换用支持图片的模型',
       'image.sendFailed': '图片发送失败：{reason}',
       'image.readFailed': '图片读取失败：{message}',
-      'file.add': '添加文件',
-      'file.add.aria': '添加文件附件',
+      'file.add': '添加图片或文件',
+      'file.add.aria': '添加图片或文件附件',
       'file.uploading': '上传中',
       'file.uploadingPercent': '上传中 {percent}%',
       'file.failed': '上传失败：{message}',
@@ -80,8 +78,6 @@ window.__ModuleLoader__.load({
       'status.sent': 'Inserted — applies at the next step',
       'status.unavailable': 'The task is no longer running or cannot accept steering',
       'status.error': 'Steering failed: {message}',
-      'image.add': 'Add images',
-      'image.add.aria': 'Add images to the steering message',
       'image.remove': 'Remove image',
       'image.unsupported': 'Only PNG, JPEG, WebP, and GIF images are supported',
       'image.invalid': 'The image format is unsupported or the file is damaged',
@@ -93,8 +89,8 @@ window.__ModuleLoader__.load({
       'image.modelUnsupported': 'The current model does not accept image input; switch to a vision-capable model',
       'image.sendFailed': 'Image send failed: {reason}',
       'image.readFailed': 'Image read failed: {message}',
-      'file.add': 'Add files',
-      'file.add.aria': 'Add file attachments',
+      'file.add': 'Add images or files',
+      'file.add.aria': 'Add images or files to the steering message',
       'file.uploading': 'Uploading',
       'file.uploadingPercent': 'Uploading {percent}%',
       'file.failed': 'Upload failed: {message}',
@@ -590,35 +586,7 @@ window.__ModuleLoader__.load({
       }));
     }
 
-    /** Picture frame for the attach button. */
-    function ImageIcon() {
-      return h('svg', {
-        viewBox: '0 0 16 16',
-        width: 15,
-        height: 15,
-        fill: 'none',
-        'aria-hidden': true,
-      },
-      h('rect', {
-        x: 2,
-        y: 3,
-        width: 12,
-        height: 10,
-        rx: 2,
-        stroke: 'currentColor',
-        strokeWidth: 1.25,
-      }),
-      h('circle', { cx: 5.2, cy: 6.2, r: 1.15, fill: 'currentColor' }),
-      h('path', {
-        d: 'M3.2 12l3.1-3.1 2 2 1.7-1.7 2.8 2.8',
-        stroke: 'currentColor',
-        strokeWidth: 1.25,
-        strokeLinecap: 'round',
-        strokeLinejoin: 'round',
-      }));
-    }
-
-    /** Paperclip for the generic file attach button. */
+    /** Paperclip for the image/file attach button. */
     function FileIcon() {
       return h('svg', {
         viewBox: '0 0 16 16',
@@ -900,7 +868,6 @@ window.__ModuleLoader__.load({
         const [showHistory, setShowHistory] = React.useState(false);
         const [cancellingId, setCancellingId] = React.useState(null);
         const inputRef = React.useRef(null);
-        const fileInputRef = React.useRef(null);
         const attachmentInputRef = React.useRef(null);
         const timerRef = React.useRef(0);
         const sendingRef = React.useRef(false);
@@ -1667,26 +1634,6 @@ window.__ModuleLoader__.load({
             onKeyDown,
             onPaste,
           }),
-          h('input', {
-            ref: fileInputRef,
-            type: 'file',
-            accept: supportedTypes.join(','),
-            multiple: true,
-            style: { display: 'none' },
-            onChange: (event) => {
-              const files = Array.from(event.target.files ?? []);
-              event.target.value = '';
-              void addFiles(files);
-            },
-          }),
-          h('button', {
-            type: 'button',
-            className: 'dsh-steer-note-attach',
-            'aria-label': t('image.add.aria'),
-            title: t('image.add'),
-            disabled: pending || images.length >= maxImages,
-            onClick: () => fileInputRef.current?.click(),
-          }, h(ImageIcon)),
           h('input', {
             ref: attachmentInputRef,
             type: 'file',
