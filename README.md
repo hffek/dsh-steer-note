@@ -1,6 +1,7 @@
 # 插话引导（dsh-steer-note）
 
 [![npm version](https://img.shields.io/npm/v/dsh-steer-note)](https://www.npmjs.com/package/dsh-steer-note)
+[![dshbase listed](https://dshbase.com/badges/dsh-steer-note.svg)](https://dshbase.com/plugins/dsh-steer-note/)
 
 > 任务运行时，随时插一句话调整方向。文字、图片、文件都能发；没发出去的草稿，回合结束会自动回到主输入框。
 
