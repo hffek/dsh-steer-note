@@ -42,6 +42,7 @@ Desktop 把 `--profile web` 换成 `--profile desktop`。安装后重启 DSH，H
 <summary>更多细节</summary>
 
 - 插话栏出现条件：当前会话正在运行，或这个会话还有未发送草稿。
+- 任务结束时如果光标还在插话框里，草稿不会自动搬走；它会留在插话栏，点「放入输入框」再搬，避免两个输入框同时出现。
 - 图片支持 PNG/JPEG/WebP/GIF，限制读取原生 `imageLimits`；模型不支持视觉输入时会提示。
 - 普通文件通过 `conversation.createDrafts` 注册并后台上传，发送时用 `{ type: 'file', receiptId }`；上传中显示进度，失败显示原因。
 - 文字写入 localStorage；图片尽量保存（受容量限制，太大时提示）；普通文件只在当前页面内存，切换会话保留，刷新会丢。

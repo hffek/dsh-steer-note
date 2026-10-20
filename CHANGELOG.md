@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.3 — 2026-10-20
+
+- Fix: if the turn ends while the interjection textarea is focused or an IME composition is active, do not auto-move the draft; keep it in the box with a "Move to composer" action, so both inputs no longer appear at once.
+- Fix: save the draft on blur and composition end.
+
 ## 0.2.2 — 2026-10-20
 
 - UI: merge the image and file buttons into one paperclip; selected images are still detected and previewed automatically.

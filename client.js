@@ -42,6 +42,7 @@ window.__ModuleLoader__.load({
       'transfer.failed': '未能放入输入框：{message}',
       'transfer.partial': '文字已放入输入框，但附件未能放入：{message}',
       'transfer.retry': '放入输入框',
+      'transfer.keepOpen': '任务已结束，草稿保留在这里；可继续编辑或点「放入输入框」',
       'transfer.attachmentsUnavailable': '当前 DSH 不支持把附件放入主输入框，请在主输入框手动添加',
       'history.button': '插话记录',
       'history.button.aria': '查看插话记录和读取状态',
@@ -103,6 +104,7 @@ window.__ModuleLoader__.load({
       'transfer.failed': 'Could not move the draft into the composer: {message}',
       'transfer.partial': 'Text moved to the composer, but the attachments could not be moved: {message}',
       'transfer.retry': 'Move to composer',
+      'transfer.keepOpen': 'The turn ended; your draft is kept here. Keep editing, then use Move to composer.',
       'transfer.attachmentsUnavailable': 'This DSH build cannot move attachments into the composer; add them in the composer manually.',
       'history.button': 'Interjections',
       'history.button.aria': 'View interjection history and read status',
@@ -873,6 +875,8 @@ window.__ModuleLoader__.load({
         const sendingRef = React.useRef(false);
         const addingRef = React.useRef(false);
         const cancellingRef = React.useRef(false);
+        const focusedRef = React.useRef(false);
+        const composingRef = React.useRef(false);
         const aliveRef = React.useRef(true);
         const imagesRef = React.useRef([]);
         const sessionRef = React.useRef(sessionId);
@@ -996,6 +1000,11 @@ window.__ModuleLoader__.load({
           if (addingRef.current) {
             setKeepOpen(true);
             setStatus({ kind: 'error', text: t('transfer.busy') });
+            return false;
+          }
+          if (focusedRef.current || composingRef.current) {
+            setKeepOpen(true);
+            setStatus({ kind: 'info', text: t('transfer.keepOpen') });
             return false;
           }
           if (mainPhaseRef.current === 'adjudicating' || mainPhaseRef.current === 'submitting') {
@@ -1630,6 +1639,21 @@ window.__ModuleLoader__.load({
               setText(nextText);
               saveDraftText(sessionId, nextText);
               setStatus((current) => (current?.kind === 'error' ? null : current));
+            },
+            onFocus: () => {
+              focusedRef.current = true;
+            },
+            onBlur: () => {
+              focusedRef.current = false;
+              const value = inputRef.current?.value;
+              if (typeof value === 'string') saveDraftText(sessionId, value);
+            },
+            onCompositionStart: () => {
+              composingRef.current = true;
+            },
+            onCompositionEnd: (event) => {
+              composingRef.current = false;
+              saveDraftText(sessionId, event.currentTarget.value);
             },
             onKeyDown,
             onPaste,
