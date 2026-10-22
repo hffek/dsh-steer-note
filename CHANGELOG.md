@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.4 — 2026-10-22
+
+- Fix: clear a stale “task ended” notice and the “Move to composer” action when a new task starts or the draft is emptied, so the interjection bar no longer reappears with old state.
+
 ## 0.2.3 — 2026-10-20
 
 - Fix: if the turn ends while the interjection textarea is focused or an IME composition is active, do not auto-move the draft; keep it in the box with a "Move to composer" action, so both inputs no longer appear at once.

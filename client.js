@@ -877,6 +877,7 @@ window.__ModuleLoader__.load({
         const cancellingRef = React.useRef(false);
         const focusedRef = React.useRef(false);
         const composingRef = React.useRef(false);
+        const runningUiRef = React.useRef(false);
         const aliveRef = React.useRef(true);
         const imagesRef = React.useRef([]);
         const sessionRef = React.useRef(sessionId);
@@ -1103,6 +1104,22 @@ window.__ModuleLoader__.load({
             return changed ? next : current;
           });
         }, [readSignature, pendingSignature, running, history]);
+
+        React.useEffect(() => {
+          if (running) {
+            if (!runningUiRef.current) {
+              runningUiRef.current = true;
+              setKeepOpen(false);
+              setStatus(null);
+            }
+            return;
+          }
+          runningUiRef.current = false;
+          if (text.trim() === '' && images.length === 0 && files.length === 0) {
+            setKeepOpen(false);
+            setStatus((current) => (current?.kind === 'info' ? null : current));
+          }
+        }, [running, text, images, files]);
 
         const hasDraft = text.trim() !== '' || images.length > 0 || files.length > 0;
         const visible = (running || hasDraft || (showHistory && history.length > 0))
@@ -1688,7 +1705,7 @@ window.__ModuleLoader__.load({
           h(HistoryIcon),
           h('span', { className: 'dsh-steer-note-history-count' }, String(history.length)),
           ),
-          (keepOpen || (!running && hasDraft)) ? h('button', {
+          (hasDraft && (keepOpen || !running)) ? h('button', {
             type: 'button',
             className: 'dsh-steer-note-retry',
             title: t('transfer.retry'),
